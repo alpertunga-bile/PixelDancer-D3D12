@@ -1,9 +1,8 @@
 #pragma once
 
 #include <array>
-#include <deque>
 #include <format>
-#include <functional>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <span>
@@ -22,6 +21,47 @@
 
 #define D3D12MA_D3D12_HEADERS_ALREADY_INCLUDED
 #include "D3D12MemAlloc.h"
+
+#include "DirectXMath.h"
+
+struct Vertex
+{
+  DirectX::XMFLOAT3 position;
+  DirectX::XMFLOAT4 color;
+};
+
+inline LPCWSTR
+to_lpcwstr(std::string& s)
+{
+  std::wstring wide_str = std::wstring(s.begin(), s.end());
+  return wide_str.c_str();
+}
+
+inline LPCWSTR
+to_lpcwstr(const char* s)
+{
+  std::string  str(s);
+  std::wstring wide_str = std::wstring(str.begin(), str.end());
+  return wide_str.c_str();
+}
+
+inline LPCSTR
+to_lpcstr(std::string& s)
+{
+  LPCSTR temp = s.c_str();
+  return temp;
+}
+
+inline LPCSTR
+to_lpcstr(const char* s)
+{
+  LPCSTR temp = std::string(s).c_str();
+  return temp;
+}
+
+#define SAFE_RELEASE(o)                                                        \
+  if (o)                                                                       \
+  (o)->Release()
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 // Debug / Logging
@@ -60,6 +100,8 @@ log_error(const char* msg, const char* file, int line)
                      msg,
                      get_output_string(file, line).c_str())
            .c_str());
+  std::cout << "Press enter to continue...\n";
+  std::cin.ignore();
   exit(EXIT_FAILURE);
 }
 
@@ -68,11 +110,22 @@ log_error(const char* msg, const char* file, int line)
 #define LOG_SUCCESS(msg) log_success(msg);
 #define LOG_WARNING(msg) log_warning(msg, __FILE__, __LINE__);
 #define LOG_ERROR(msg)   log_error(msg, __FILE__, __LINE__);
+
+inline void
+set_name(ID3D12Object* object, LPCWSTR name)
+{
+  object->SetName(name);
+}
 #else
 #define LOG_INFO(msg)
 #define LOG_SUCCESS(msg)
 #define LOG_WARNING(msg)
 #define LOG_ERROR(msg)
+
+inline void
+set_name(ID3D12Object* object, LPCWSTR name)
+{
+}
 #endif
 
 inline std::string

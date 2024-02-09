@@ -11,9 +11,6 @@ set(CMAKE_BUILD_TYPE Debug)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmakes")
 
-message(STATUS ${D3D12_INCLUDE_DIRS})
-message(STATUS ${D3D12_LIBRARIES})
-
 find_package(D3D12 REQUIRED)
 
 #[[
@@ -31,8 +28,19 @@ file(GLOB D3DX12_HEADER_FILES ${CMAKE_SOURCE_DIR}/includes/directx/*.h)
 set(HEADER_FILES
     ${D3DX12_HEADER_FILES}
     ${D3D12_INCLUDE_DIR}/d3d12.h
+    ${D3D12_INCLUDE_DIR}/d3dcompiler.h
+    ${D3D12_INCLUDE_DIR}/DirectXMath.h
     ${DXGI_INCLUDE_DIR}/dxgi1_4.h
+    ${DXGI_INCLUDE_DIR}/dxgi1_6.h
     includes/d3d12_engine.h
+    includes/nexus.h
+    includes/swapchain.h
+    includes/deletion_queue.h
+    includes/command_queue.h
+    includes/pipeline.h
+    includes/fence.h
+    includes/shader.h
+    includes/buffer.h
     includes/d3d12_types.h
     includes/D3D12MemAlloc.h
 )
@@ -40,6 +48,14 @@ set(HEADER_FILES
 set(SOURCE_FILES
     main.cpp
     sources/d3d12_engine.cpp
+    sources/swapchain.cpp
+    sources/command_queue.cpp
+    sources/fence.cpp
+    sources/pipeline.cpp
+    sources/shader.cpp
+    sources/nexus.cpp
+    sources/buffer.cpp
+    sources/D3D12MemAlloc.cpp
     ${HEADER_FILES}
 )
 
