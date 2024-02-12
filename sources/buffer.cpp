@@ -34,4 +34,15 @@ Buffer::destroy()
   SAFE_RELEASE(m_buffer);
   SAFE_RELEASE(m_allocation);
 }
+
+void
+Buffer::update(unsigned int size, void* buffer_data)
+{
+  void* data = nullptr;
+  D3D12_CHECK(m_buffer->Map(0, NULL, &data));
+
+  memcpy(data, buffer_data, size);
+
+  m_buffer->Unmap(0, NULL);
+}
 }

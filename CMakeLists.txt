@@ -41,6 +41,7 @@ set(HEADER_FILES
     includes/fence.h
     includes/shader.h
     includes/buffer.h
+    includes/command_list.h
     includes/d3d12_types.h
     includes/D3D12MemAlloc.h
 )
@@ -54,6 +55,7 @@ set(SOURCE_FILES
     sources/pipeline.cpp
     sources/shader.cpp
     sources/nexus.cpp
+    sources/command_list.cpp    
     sources/buffer.cpp
     sources/D3D12MemAlloc.cpp
     ${HEADER_FILES}

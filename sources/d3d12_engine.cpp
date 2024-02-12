@@ -57,8 +57,8 @@ D3D12Engine::init(HINSTANCE hInstance, int nCmdShow)
                          WS_OVERLAPPEDWINDOW,
                          CW_USEDEFAULT,
                          CW_USEDEFAULT,
-                         m_window_rect.right - m_window_rect.left,
-                         m_window_rect.bottom - m_window_rect.top,
+                         m_width,
+                         m_height,
                          nullptr,
                          nullptr,
                          hInstance,
@@ -92,6 +92,13 @@ D3D12Engine::cleanup()
 void
 D3D12Engine::draw()
 {
+  populate_commands();
+
+  ID3D12CommandList* command_lists[] = { m_command_list.get_cmd_list() };
+  m_command_queue.execute(_countof(command_lists), command_lists);
+
+  m_swapchain.present();
+
   m_fence.move_next_frame(m_swapchain, m_command_queue);
 }
 
@@ -155,7 +162,14 @@ D3D12Engine::init_pipeline()
   m_vertex_shader.destroy();
   m_pixel_shader.destroy();
 
-  m_deletion_queue.push_function([&]() { m_pipeline.destroy(); });
+  m_command_list.init(m_nexus.get_device(),
+                      m_pipeline.get_pipeline_state(),
+                      m_swapchain.get_current_command_allocator());
+
+  m_deletion_queue.push_function([&]() {
+    m_pipeline.destroy();
+    m_command_list.destroy();
+  });
 }
 
 void
@@ -174,10 +188,7 @@ D3D12Engine::init_data()
 
   m_vertex_buffer.init(m_nexus.get_allocator(), vertex_buffer_size);
 
-  void* data = nullptr;
-  D3D12_CHECK(m_vertex_buffer.get_buffer()->Map(0, NULL, &data));
-  memcpy(data, triangle_vertices, vertex_buffer_size);
-  m_vertex_buffer.get_buffer()->Unmap(0, NULL);
+  m_vertex_buffer.update(vertex_buffer_size, triangle_vertices);
 
   m_vertex_buffer_view.BufferLocation =
     m_vertex_buffer.get_buffer()->GetGPUVirtualAddress();
@@ -197,4 +208,34 @@ D3D12Engine::init_sync()
   m_fence.wait_for_gpu(m_command_queue, *m_swapchain.get_current_fence_value());
 
   m_deletion_queue.push_function([&]() { m_fence.destroy(); });
+}
+
+void
+D3D12Engine::populate_commands()
+{
+  m_swapchain.reset_current_command_allocator();
+
+  m_command_list.reset(m_swapchain.get_current_command_allocator(),
+                       m_pipeline.get_pipeline_state());
+
+  ID3D12GraphicsCommandList* cmd_list = m_command_list.get_cmd_list();
+
+  cmd_list->SetGraphicsRootSignature(m_pipeline.get_root_signature());
+  cmd_list->RSSetViewports(1, &m_viewport);
+  cmd_list->RSSetScissorRects(1, &m_scissor_rect);
+
+  m_swapchain.transition(cmd_list, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+  CD3DX12_CPU_DESCRIPTOR_HANDLE rtv_handle = m_swapchain.get_rtv_handle();
+  cmd_list->OMSetRenderTargets(1, &rtv_handle, FALSE, nullptr);
+
+  const float clear_color[] = { 0.f, 0.5f, 0.34f, 1.f };
+  cmd_list->ClearRenderTargetView(rtv_handle, clear_color, 0, nullptr);
+  cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  cmd_list->IASetVertexBuffers(0, 1, &m_vertex_buffer_view);
+  cmd_list->DrawInstanced(3, 1, 0, 0);
+
+  m_swapchain.transition(cmd_list, D3D12_RESOURCE_STATE_PRESENT);
+
+  m_command_list.end();
 }
